@@ -1,0 +1,57 @@
+# General
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+.env
+.env.*
+env.local
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Builds
+_dist/
+dist/
+build/
+.next/
+.expo/
+expo/
+web-build/
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# Expo/React Native
+.expo-shared/
+android/
+ios/
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# OS/Editor
+*.orig
+*.patch
+.history/
+
+# Backend uploads and temp
+backend/uploads/
+backend/storage/*.json
+backend/temp_createpost_backup.txt
+uploads/
+
+# Images and media caches
+frontend/assets/images/generated/
+
+# Local environment overrides
+frontend/.env*
+backend/.env*

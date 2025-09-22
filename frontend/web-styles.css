@@ -1,0 +1,135 @@
+/* Web-specific styles for React Native Web scrolling */
+
+/* Ensure body and html take full height */
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* Force all React Native Web ScrollViews to be scrollable */
+div[style*="overflow-y: hidden"],
+div[style*="overflow: hidden"],
+[data-testid="scroll-view"],
+.css-view-175oi2r {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* More specific targeting for React Native Web components */
+div[style*="flex-direction: column"][style*="overflow"] {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Target any element that might be a scroll container */
+div[style*="flex: 1"][style*="overflow"] {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Nuclear option - force ALL divs with certain patterns to be scrollable */
+div[style*="flex-direction: column"],
+div[style*="flex: 1"],
+div[class*="css-view"] {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Specific targeting for common React Native Web patterns */
+div[style*="position: relative"][style*="overflow"] {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Force scrolling on any element that has content overflow */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+/* Mobile/Touch device specific fixes */
+@media (hover: none) and (pointer: coarse) {
+  /* This targets touch devices */
+  div[style*="overflow"],
+  .css-view-175oi2r {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior: contain !important;
+  }
+  
+  /* Ensure content has enough space to scroll */
+  body, #root {
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+  }
+}
+
+/* Force touch scrolling on all potentially scrollable elements */
+div[style*="flex: 1"],
+div[style*="flex-direction: column"] {
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
+  overscroll-behavior: contain !important;
+}
+
+/* Ensure scrollable content areas */
+.scrollable-content {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  height: 100%;
+}
+
+/* Fix for main container */
+[data-testid="main-container"] {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Custom scrollbar styling for better UX */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Dark theme scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* Fix for specific React Native Web classes */
+.css-view-175oi2r {
+  overflow-y: auto !important;
+}
+
+/* Ensure tab navigator content is scrollable */
+.tab-content {
+  height: calc(100vh - 80px);
+  overflow-y: auto;
+}

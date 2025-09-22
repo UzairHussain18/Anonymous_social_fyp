@@ -1,0 +1,469 @@
+import axios, { AxiosResponse } from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+
+// Platform-specific API URLs
+const getBaseURL = () => {
+  if (!__DEV__) return 'https://your-production-url.com/api';
+  
+  // Development URLs for different platforms
+  // Change this IP to your computer's IP address
+  const YOUR_COMPUTER_IP = '192.168.10.6'; // Update this if needed
+  
+  // For web platform, try localhost first, then fallback to IP
+  if (Platform.OS === 'web') {
+    // Try localhost first for web browsers
+    return `http://localhost:3000/api`;
+  }
+  
+  return `http://${YOUR_COMPUTER_IP}:3000/api`;
+};
+
+const BASE_URL = getBaseURL();
+
+// Create axios instance
+export const api = axios.create({
+  baseURL: BASE_URL,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  async (config) => {
+    const token = await AsyncStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid
+      await AsyncStorage.removeItem('authToken');
+      // You might want to redirect to login screen here
+    }
+    return Promise.reject(error);
+  }
+);
+
+// API Response types
+interface ApiResponse<T = any> {
+  success: boolean;
+  message: string;
+  data?: T;
+  token?: string;
+  user?: any;
+}
+
+interface PaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total?: number;
+    hasMore: boolean;
+  };
+}
+
+// Auth API
+export const authAPI = {
+  login: async (email: string, password: string): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.post('/auth/login', {
+      email,
+      password,
+    });
+    return response.data;
+  },
+
+  signup: async (userData: {
+    email: string;
+    phone?: string;
+    password: string;
+    username: string;
+    preferences: string[];
+    avatar?: string;
+  }): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.post('/auth/signup', userData);
+    return response.data;
+  },
+
+  verifyToken: async (token: string): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.post('/auth/verify-token', {
+      token,
+    });
+    return response.data;
+  },
+
+  refreshToken: async (token: string): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.post('/auth/refresh-token', {
+      token,
+    });
+    return response.data;
+  },
+};
+
+// User API
+export const userAPI = {
+  getProfile: async (username: string): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.get(`/user/profile/${username}`);
+    return response.data;
+  },
+
+  updateProfile: async (userData: {
+    bio?: string;
+    preferences?: string[];
+    avatar?: string;
+    settings?: any;
+  }): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.put('/user/profile', userData);
+    return response.data;
+  },
+
+  echoUser: async (userId: string): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.post(`/user/echo/${userId}`);
+    return response.data;
+  },
+
+  unechoUser: async (userId: string): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.delete(`/user/echo/${userId}`);
+    return response.data;
+  },
+
+  discoverUsers: async (limit: number = 10): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.get(`/user/discover?limit=${limit}`);
+    return response.data;
+  },
+
+  getEchoTrails: async (userId: string): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.get(`/user/echo-trails/${userId}`);
+    return response.data;
+  },
+
+  searchUsers: async (query: string, category?: string): Promise<ApiResponse> => {
+    const params = new URLSearchParams({ q: query });
+    if (category) params.append('category', category);
+    const response: AxiosResponse<ApiResponse> = await api.get(`/user/search?${params}`);
+    return response.data;
+  },
+
+  getNotifications: async (): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.get('/user/notifications');
+    return response.data;
+  },
+};
+
+// Posts API
+export const postsAPI = {
+  createPost: async (postData: {
+    content: {
+      text: string;
+      image?: string;
+      voiceNote?: string;
+    };
+    category: string;
+    visibility?: 'normal' | 'disguise';
+    disguiseAvatar?: string;
+    vanishMode?: {
+      enabled: boolean;
+      duration?: '1hour' | '1day' | '1week';
+    };
+    tags?: string[];
+  }): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.post('/posts', postData);
+    return response.data;
+  },
+
+  getFeed: async (page: number = 1, limit: number = 20): Promise<PaginatedResponse<any>> => {
+    const response: AxiosResponse<PaginatedResponse<any>> = await api.get(
+      `/posts/feed?page=${page}&limit=${limit}`
+    );
+    return response.data;
+  },
+
+  getExplorePosts: async (
+    page: number = 1,
+    limit: number = 20,
+    category?: string,
+    filter: 'trending' | 'recent' | 'popular' = 'trending'
+  ): Promise<PaginatedResponse<any>> => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      filter,
+    });
+    if (category) params.append('category', category);
+    
+    const response: AxiosResponse<PaginatedResponse<any>> = await api.get(
+      `/posts/explore?${params}`
+    );
+    return response.data;
+  },
+
+  getPost: async (postId: string): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.get(`/posts/${postId}`);
+    return response.data;
+  },
+
+  getUserPosts: async (
+    userId: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<PaginatedResponse<any>> => {
+    const response: AxiosResponse<PaginatedResponse<any>> = await api.get(
+      `/posts/user/${userId}?page=${page}&limit=${limit}`
+    );
+    return response.data;
+  },
+
+  addComment: async (
+    postId: string,
+    content: string,
+    isAnonymous: boolean = false
+  ): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.post(`/posts/${postId}/comments`, {
+      content,
+      isAnonymous,
+    });
+    return response.data;
+  },
+
+  deletePost: async (postId: string): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.delete(`/posts/${postId}`);
+    return response.data;
+  },
+};
+
+// WhisperWall API
+export const whisperWallAPI = {
+  createWhisperPost: async (postData: {
+    content: {
+      text: string;
+      image?: string;
+      voiceNote?: string;
+    };
+    category: string;
+    tags?: string[];
+    location?: {
+      city: string;
+      country: string;
+      emoji: string;
+    };
+  }): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.post('/whisperwall', postData);
+    return response.data;
+  },
+
+  getWhisperPosts: async (
+    page: number = 1,
+    limit: number = 20,
+    category?: string,
+    filter: 'trending' | 'recent' | 'popular' = 'recent'
+  ): Promise<PaginatedResponse<any>> => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      filter,
+    });
+    if (category) params.append('category', category);
+    
+    const response: AxiosResponse<PaginatedResponse<any>> = await api.get(
+      `/whisperwall?${params}`
+    );
+    return response.data;
+  },
+
+  getWhisperPost: async (postId: string): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.get(`/whisperwall/${postId}`);
+    return response.data;
+  },
+
+  reactToWhisperPost: async (
+    postId: string,
+    reactionType: 'funny' | 'rage' | 'shock' | 'relatable' | 'love' | 'thinking'
+  ): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.post(
+      `/whisperwall/${postId}/react`,
+      { reactionType }
+    );
+    return response.data;
+  },
+
+  removeWhisperReaction: async (postId: string): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.delete(`/whisperwall/${postId}/react`);
+    return response.data;
+  },
+
+  addWhisperComment: async (postId: string, content: string): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.post(
+      `/whisperwall/${postId}/comments`,
+      { content }
+    );
+    return response.data;
+  },
+
+  createWhisperChain: async (
+    message: string,
+    isForwarding: boolean = false,
+    originalChainId?: string,
+    hopCount?: number,
+    originalMessage?: string
+  ): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.post('/whisperwall/whisper-chain', {
+      message,
+      isForwarding,
+      originalChainId,
+      hopCount,
+      originalMessage,
+    });
+    return response.data;
+  },
+
+  getConfessionRoom: async (roomId: string): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.get(
+      `/whisperwall/confession-room/${roomId}`
+    );
+    return response.data;
+  },
+
+  createConfessionPost: async (
+    content: string,
+    roomId: string,
+    theme?: string
+  ): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.post('/whisperwall/confession-room', {
+      content,
+      roomId,
+      theme,
+    });
+    return response.data;
+  },
+
+  getRandomConfession: async (): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.get('/whisperwall/random-confession');
+    return response.data;
+  },
+
+  getMoodHeatmap: async (): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.get('/whisperwall/mood-heatmap');
+    return response.data;
+  },
+};
+
+// Reactions API
+export const reactionsAPI = {
+  addReaction: async (
+    postId: string,
+    reactionType: 'funny' | 'rage' | 'shock' | 'relatable' | 'love' | 'thinking'
+  ): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.post(`/reactions/${postId}`, {
+      reactionType,
+    });
+    return response.data;
+  },
+
+  removeReaction: async (postId: string): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.delete(`/reactions/${postId}`);
+    return response.data;
+  },
+
+  getReactionUsers: async (
+    postId: string,
+    reactionType: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<PaginatedResponse<any>> => {
+    const response: AxiosResponse<PaginatedResponse<any>> = await api.get(
+      `/reactions/${postId}/users/${reactionType}?page=${page}&limit=${limit}`
+    );
+    return response.data;
+  },
+
+  reactToComment: async (
+    postId: string,
+    commentId: string,
+    reactionType: 'funny' | 'love'
+  ): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.post(
+      `/reactions/comments/${postId}/${commentId}`,
+      { reactionType }
+    );
+    return response.data;
+  },
+
+  removeCommentReaction: async (postId: string, commentId: string): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.delete(
+      `/reactions/comments/${postId}/${commentId}`
+    );
+    return response.data;
+  },
+
+  getTrendingReactions: async (
+    timeframe: '1h' | '24h' | '7d' = '24h',
+    limit: number = 10
+  ): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.get(
+      `/reactions/trending?timeframe=${timeframe}&limit=${limit}`
+    );
+    return response.data;
+  },
+};
+
+// Media upload API
+export const mediaAPI = {
+  uploadSingle: async (file: {
+    uri: string;
+    type: string;
+    name: string;
+  }): Promise<ApiResponse> => {
+    const formData = new FormData();
+    formData.append('media', {
+      uri: file.uri,
+      type: file.type,
+      name: file.name,
+    } as any);
+
+    const response: AxiosResponse<ApiResponse> = await api.post('/upload/single', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  uploadMultiple: async (files: Array<{
+    uri: string;
+    type: string;
+    name: string;
+  }>): Promise<ApiResponse> => {
+    const formData = new FormData();
+    
+    files.forEach((file, index) => {
+      formData.append('media', {
+        uri: file.uri,
+        type: file.type,
+        name: file.name,
+      } as any);
+    });
+
+    const response: AxiosResponse<ApiResponse> = await api.post('/upload/multiple', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+};
+
+export default api;

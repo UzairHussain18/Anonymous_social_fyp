@@ -1,0 +1,43 @@
+{
+  "name": "whisper-echo-app",
+  "version": "1.0.0",
+  "description": "Anonymous social media app with unique features",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js",
+    "simple": "node backend/server-simple.js",
+    "atlas": "node backend/server-atlas.js",
+    "frontend": "cd frontend && npm start",
+    "android": "cd frontend && npx react-native run-android",
+    "ios": "cd frontend && npx react-native run-ios",
+    "install-all": "npm install && cd frontend && npm install"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.10.0",
+    "express-validator": "^7.0.1",
+    "helmet": "^7.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^7.5.0",
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.2",
+    "sharp": "^0.32.6",
+    "socket.io": "^4.7.2",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "social-media",
+    "anonymous",
+    "react-native",
+    "nodejs"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

@@ -1,0 +1,104 @@
+/* Aggressive CSS to force scrolling on React Native Web */
+
+/* Reset everything */
+html, body {
+  height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+#root {
+  height: 100vh !important;
+  overflow: hidden !important;
+}
+
+/* Force all React Native Web divs to be scrollable if they have overflow hidden */
+div[style*="overflow: hidden"],
+div[style*="overflow-y: hidden"] {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  scroll-behavior: smooth !important;
+}
+
+/* Target specific React Native Web classes */
+.css-view-175oi2r,
+.css-view-g5y9jx {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Force scrolling on flex containers */
+div[style*="flex: 1"] {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+div[style*="flex-direction: column"] {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Mobile and touch device support */
+@media (hover: none) and (pointer: coarse), (max-width: 768px) {
+  /* Force touch scrolling on all elements */
+  * {
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior: contain !important;
+  }
+  
+  div {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+/* Specific targeting for common React Native Web patterns */
+div[style*="position: relative"][style*="overflow"] {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Ensure scrollbars are visible */
+::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 4px !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3) !important;
+  border-radius: 4px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Dark theme scrollbar */
+body.dark ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1) !important;
+}
+
+body.dark ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Nuclear option - force ALL divs to be potentially scrollable */
+div {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
