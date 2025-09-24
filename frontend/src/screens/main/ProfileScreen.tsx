@@ -26,14 +26,13 @@ const ProfileScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadUserPosts = async () => {
-    if (!user?._id) return;
+    if (!user?.username) return;
     
     try {
       setLoading(true);
-      const response = await postsAPI.getUserPosts(user._id, 1, 20);
-      if (response.success) {
-        setUserPosts(response.data || []);
-      }
+      const response: any = await postsAPI.getUserPosts(user.username, 1, 20);
+      const posts = response.posts || response.data || [];
+      setUserPosts(posts);
     } catch (error) {
       console.log('Error loading user posts:', error);
     } finally {
@@ -45,17 +44,17 @@ const ProfileScreen: React.FC = () => {
     setRefreshing(true);
     await loadUserPosts();
     setRefreshing(false);
-  }, [user?._id]);
+  }, [user?.username]);
 
   useEffect(() => {
     loadUserPosts();
-  }, [user?._id]);
+  }, [user?.username]);
 
   // Refresh posts when screen comes into focus (e.g., after creating a post)
   useFocusEffect(
     React.useCallback(() => {
       loadUserPosts();
-    }, [user?._id])
+    }, [user?.username])
   );
 
   const styles = StyleSheet.create({
@@ -236,6 +235,10 @@ const ProfileScreen: React.FC = () => {
       flexDirection: 'row',
       alignItems: 'center',
     },
+    reactionEmoji: {
+      fontSize: 16,
+      marginRight: theme.spacing.xs,
+    },
     reactionText: {
       fontSize: 12,
       color: theme.colors.textSecondary,
@@ -412,7 +415,7 @@ const ProfileScreen: React.FC = () => {
                 <View style={styles.postReactions}>
                   <Text style={styles.reactionEmoji}>❤️</Text>
                   <Text style={styles.reactionText}>
-                    {Object.values(post.reactions).reduce((sum: number, count: any) => sum + count, 0)} reactions
+                    {post.reactionCounts?.total || 0} reactions
                   </Text>
                 </View>
               </View>

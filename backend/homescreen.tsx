@@ -10,6 +10,8 @@ import {
   FlatList,
   Dimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+// import { VideoView } from 'expo-video';
 import { useTheme } from '../../context/ThemeContext';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -30,8 +32,7 @@ const HomeScreen: React.FC = () => {
   const loadPosts = async () => {
     try {
       setLoading(true);
-
-      const response = await postsAPI.getFeed(1, 20); // API call
+      const response = await postsAPI.getFeed(1, 20);
       if (response.success) {
         setPosts(response.data || []);
       }
@@ -51,17 +52,25 @@ const HomeScreen: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
-    if (user) loadPosts();
+    if (user) {
+      loadPosts();
+    }
   }, [user]);
 
+  // Refresh posts when screen comes into focus (e.g., after creating a post)
   useFocusEffect(
     React.useCallback(() => {
-      if (user) loadPosts();
+      if (user) {
+        loadPosts();
+      }
     }, [user])
   );
 
   const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.colors.background },
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
     header: {
       paddingHorizontal: theme.spacing.xl,
       paddingVertical: theme.spacing.lg,
@@ -69,7 +78,10 @@ const HomeScreen: React.FC = () => {
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
     },
-    headerContent: { flexDirection: 'row', alignItems: 'center' },
+    headerContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
     avatarContainer: {
       width: 50,
       height: 50,
@@ -80,19 +92,42 @@ const HomeScreen: React.FC = () => {
       marginRight: theme.spacing.md,
       ...theme.shadows.small,
     },
-    avatarImage: { width: 50, height: 50, borderRadius: 25 },
-    avatarText: { fontSize: 20, fontWeight: 'bold', color: theme.colors.primary },
-    headerText: { flex: 1 },
+    avatarImage: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+    },
+    avatarText: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: theme.colors.primary,
+    },
+    headerText: {
+      flex: 1,
+    },
     greeting: {
       fontSize: 24,
       fontWeight: 'bold',
       color: theme.colors.text,
       marginBottom: theme.spacing.sm,
     },
-    subtitle: { fontSize: 16, color: theme.colors.textSecondary },
-    content: { flex: 1, padding: theme.spacing.xl },
-    placeholderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    placeholderIcon: { fontSize: 80, marginBottom: theme.spacing.lg },
+    subtitle: {
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+    },
+    content: {
+      flex: 1,
+      padding: theme.spacing.xl,
+    },
+    placeholderContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    placeholderIcon: {
+      fontSize: 80,
+      marginBottom: theme.spacing.lg,
+    },
     placeholderTitle: {
       fontSize: 24,
       fontWeight: 'bold',
@@ -129,7 +164,9 @@ const HomeScreen: React.FC = () => {
       alignSelf: 'flex-start',
       marginTop: theme.spacing.sm,
     },
-    streakEmoji: { fontSize: 16 },
+    streakEmoji: {
+      fontSize: 16,
+    },
     streakText: {
       fontSize: 14,
       fontWeight: '600',
@@ -143,26 +180,83 @@ const HomeScreen: React.FC = () => {
       marginBottom: theme.spacing.md,
       ...theme.shadows.small,
     },
-    postCategory: { fontSize: 12, fontWeight: '600', marginBottom: theme.spacing.sm },
-    postText: { fontSize: 16, lineHeight: 24, marginBottom: theme.spacing.md },
-    postMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    postDate: { fontSize: 12 },
-    postReactions: { flexDirection: 'row', alignItems: 'center' },
-    reactionText: { fontSize: 12, marginLeft: theme.spacing.sm },
-    mediaContainer: { marginVertical: theme.spacing.md },
-    mediaItem: { marginRight: theme.spacing.sm },
+    postCategory: {
+      fontSize: 12,
+      color: theme.colors.primary,
+      fontWeight: '600',
+      marginBottom: theme.spacing.sm,
+    },
+    postText: {
+      fontSize: 16,
+      color: theme.colors.text,
+      lineHeight: 24,
+      marginBottom: theme.spacing.md,
+    },
+    postMeta: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    postDate: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+    },
+    postReactions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    reactionText: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      marginLeft: theme.spacing.sm,
+    },
+    mediaContainer: {
+      marginVertical: theme.spacing.md,
+    },
+    mediaItem: {
+      marginRight: theme.spacing.sm,
+    },
     mediaContent: {
       height: 200,
       borderRadius: theme.borderRadius.md,
       backgroundColor: theme.colors.surface,
     },
-    videoContainer: { borderRadius: theme.borderRadius.md, overflow: 'hidden' },
-    postHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.sm },
-    authorInfo: { flexDirection: 'row', alignItems: 'center' },
-    avatar: { width: 40, height: 40, borderRadius: 20, marginRight: theme.spacing.sm },
-    avatarPlaceholder: { width: 40, height: 40, borderRadius: 20, marginRight: theme.spacing.sm, justifyContent: 'center', alignItems: 'center' },
-    username: { fontSize: 16, fontWeight: 'bold' },
-    reactionEmoji: { fontSize: 20, marginRight: theme.spacing.xs },
+    videoContainer: {
+      borderRadius: theme.borderRadius.md,
+      overflow: 'hidden',
+    },
+    postHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: theme.spacing.sm,
+    },
+    authorInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    avatar: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      marginRight: theme.spacing.sm,
+    },
+    avatarPlaceholder: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      marginRight: theme.spacing.sm,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    username: {
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    reactionEmoji: {
+      fontSize: 20,
+      marginRight: theme.spacing.xs,
+    },
   });
 
   const getGreeting = () => {
@@ -172,17 +266,20 @@ const HomeScreen: React.FC = () => {
     return 'Good Evening';
   };
 
+  // Media renderer component
   const renderMedia = (media: any[]) => {
     if (!media || media.length === 0) return null;
+
     const screenWidth = Dimensions.get('window').width;
-    const mediaWidth = screenWidth - 40;
+    const mediaWidth = screenWidth - 40; // Account for padding
+
     return (
       <View style={styles.mediaContainer}>
         <FlatList
           data={media}
           horizontal
           showsHorizontalScrollIndicator={false}
-          keyExtractor={(_, index) => index.toString()}
+          keyExtractor={(item, index) => index.toString()}
           renderItem={({ item }) => (
             <View style={styles.mediaItem}>
               {item.mimetype?.startsWith('video/') ? (
@@ -192,7 +289,11 @@ const HomeScreen: React.FC = () => {
                   </View>
                 </View>
               ) : (
-                <Image source={{ uri: item.url }} style={[styles.mediaContent, { width: mediaWidth * 0.8 }]} resizeMode="cover" />
+                <Image 
+                  source={{ uri: item.url }} 
+                  style={[styles.mediaContent, { width: mediaWidth * 0.8 }]}
+                  resizeMode="cover"
+                />
               )}
             </View>
           )}
@@ -206,23 +307,34 @@ const HomeScreen: React.FC = () => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
+          {/* Avatar */}
           <View style={styles.avatarContainer}>
             {user?.avatar ? (
               <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
             ) : (
-              <Text style={styles.avatarText}>{user?.username?.charAt(0).toUpperCase() || '?'}</Text>
+              <Text style={styles.avatarText}>
+                {user?.username?.charAt(0).toUpperCase() || '?'}
+              </Text>
             )}
           </View>
+          
+          {/* Header Text */}
           <View style={styles.headerText}>
-            <Text style={styles.greeting}>{getGreeting()}, {user?.username}! 👋</Text>
-            <Text style={styles.subtitle}>Ready to echo some thoughts today?</Text>
+            <Text style={styles.greeting}>
+              {getGreeting()}, {user?.username}! 👋
+            </Text>
+            <Text style={styles.subtitle}>
+              Ready to echo some thoughts today?
+            </Text>
           </View>
         </View>
-
+        
         {user?.streaks?.currentStreak && user.streaks.currentStreak > 0 && (
           <View style={styles.streakContainer}>
             <Text style={styles.streakEmoji}>🔥</Text>
-            <Text style={styles.streakText}>{user?.streaks?.currentStreak} day streak!</Text>
+            <Text style={styles.streakText}>
+              {user.streaks.currentStreak} day streak!
+            </Text>
           </View>
         )}
       </View>
@@ -230,28 +342,47 @@ const HomeScreen: React.FC = () => {
       {/* Content */}
       <ScrollView
         style={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {posts.length > 0 ? (
-          posts.map(post => (
-            <TouchableOpacity key={post._id} style={styles.postCard} onPress={() => navigation.navigate('PostDetail', { postId: post._id })}>
+          // Show posts
+          posts.map((post: any) => (
+            <TouchableOpacity 
+              key={post._id} 
+              style={styles.postCard}
+              onPress={() => navigation.navigate('PostDetail', { postId: post._id })}
+            >
               <View style={styles.postHeader}>
                 <View style={styles.authorInfo}>
-                  <TouchableOpacity onPress={() => post.author?.username && navigation.navigate('UserProfile', { username: post.author.username })} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    {post.author?.avatar ? (
-                      <Image source={{ uri: post.author.avatar }} style={styles.avatar} />
-                    ) : (
-                      <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.primary }]}>
-                        <Text style={styles.avatarText}>{post.author?.username?.charAt(0).toUpperCase() || '?'}</Text>
-                      </View>
-                    )}
-                    <Text style={[styles.username, { color: theme.colors.text }]}>{post.author?.username || 'Unknown User'}</Text>
-                  </TouchableOpacity>
+                  {post.author?.avatar ? (
+                    <Image source={{ uri: post.author.avatar }} style={styles.avatar} />
+                  ) : (
+                    <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.primary }]}>
+                      <Text style={styles.avatarText}>
+                        {post.author?.username?.charAt(0).toUpperCase() || '?'}
+                      </Text>
+                    </View>
+                  )}
+                  <Text style={[styles.username, { color: theme.colors.text }]}>
+                    {post.author?.username || 'Unknown User'}
+                  </Text>
                 </View>
-                <Text style={[styles.postDate, { color: theme.colors.textSecondary }]}>{new Date(post.createdAt).toLocaleDateString()}</Text>
+                <Text style={[styles.postDate, { color: theme.colors.textSecondary }]}>
+                  {new Date(post.createdAt).toLocaleDateString()}
+                </Text>
               </View>
-              {post.category && <Text style={[styles.postCategory, { color: theme.colors.primary }]}>#{post.category}</Text>}
-              {post.content?.text && <Text style={[styles.postText, { color: theme.colors.text }]} numberOfLines={3}>{post.content.text}</Text>}
+              {post.category && (
+                <Text style={[styles.postCategory, { color: theme.colors.primary }]}>
+                  #{post.category}
+                </Text>
+              )}
+              {post.content?.text && (
+                <Text style={[styles.postText, { color: theme.colors.text }]} numberOfLines={3}>
+                  {post.content.text}
+                </Text>
+              )}
               {renderMedia(post.content.media)}
               <View style={styles.postMeta}>
                 <View style={styles.postReactions}>
@@ -273,17 +404,28 @@ const HomeScreen: React.FC = () => {
             </TouchableOpacity>
           ))
         ) : loading ? (
+          // Show loading
           <View style={styles.placeholderContainer}>
             <Text style={styles.placeholderIcon}>⏳</Text>
             <Text style={styles.placeholderTitle}>Loading your feed...</Text>
           </View>
         ) : (
+          // Show placeholder
           <View style={styles.placeholderContainer}>
             <Text style={styles.placeholderIcon}>📱</Text>
-            <Text style={styles.placeholderTitle}>Your Feed is Ready!</Text>
-            <Text style={styles.placeholderText}>Start creating posts and following users to see content from your community appear here.</Text>
-            <TouchableOpacity style={styles.startButton} onPress={() => navigation.navigate('CreatePost')}>
-              <Text style={styles.startButtonText}>Create Your First Post</Text>
+            <Text style={styles.placeholderTitle}>
+              Your Feed is Ready!
+            </Text>
+            <Text style={styles.placeholderText}>
+              Start creating posts and following users to see content from your community appear here.
+            </Text>
+            <TouchableOpacity 
+              style={styles.startButton}
+              onPress={() => navigation.navigate('CreatePost')}
+            >
+              <Text style={styles.startButtonText}>
+                Create Your First Post
+              </Text>
             </TouchableOpacity>
           </View>
         )}

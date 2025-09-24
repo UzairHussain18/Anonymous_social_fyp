@@ -16,6 +16,7 @@ import CreatePostScreen from '../screens/main/CreatePostScreen';
 import PostDetailScreen from '../screens/main/PostDetailScreen';
 import UserProfileScreen from '../screens/main/UserProfileScreen';
 import SettingsScreen from '../screens/main/SettingsScreen';
+import ChatScreen from '../screens/main/ChatScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
 
 const Tab = createBottomTabNavigator();
@@ -118,10 +119,10 @@ const TabNavigator: React.FC = () => {
   const { theme } = useTheme();
 
   return (
-    <View style={{ 
-      flex: 1,
-      ...(Platform.OS === 'web' && { height: '100vh', display: 'flex', flexDirection: 'column' })
-    }}>
+    <View style={[
+      { flex: 1 },
+      Platform.OS === 'web' ? ({ height: '100vh', display: 'flex', flexDirection: 'column' } as any) : null,
+    ]}>
       <Tab.Navigator
         screenOptions={{
           headerShown: false,
@@ -164,7 +165,7 @@ const TabNavigator: React.FC = () => {
           tabBarIcon: () => null,
           tabBarButton: (props) => (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-              <CreatePostButton onPress={() => props.onPress?.()} />
+              <CreatePostButton onPress={() => props.onPress?.({} as any)} />
             </View>
           ),
         }}
@@ -206,7 +207,7 @@ const MainNavigator: React.FC = () => {
           shadowOpacity: 0,
         },
         headerTitleStyle: {
-          fontFamily: Platform.select({ ios: 'System', android: 'Roboto' }),
+          fontFamily: Platform.select({ ios: 'System', android: 'Roboto', default: 'system-ui' }),
           fontWeight: '600',
           fontSize: 18,
           color: theme.colors.text,
@@ -232,9 +233,12 @@ const MainNavigator: React.FC = () => {
       <Stack.Screen
         name="UserProfile"
         component={UserProfileScreen}
-        options={{
-          title: 'Profile'
-        }}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Chat"
+        component={ChatScreen}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Settings"

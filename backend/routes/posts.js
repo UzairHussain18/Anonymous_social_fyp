@@ -91,22 +91,43 @@ router.get('/feed', authenticateToken, async (req, res) => {
     const skip = (page - 1) * limit;
     const userId = req.user._id;
 
-    // Get posts from followed users and posts matching user's preferences
-    const posts = await Post.find({
-      $or: [
-        { author: { $in: req.user.following } },
-        { category: { $in: req.user.preferences } }
-      ],
+    // Build dynamic source filters
+    const followingIds = Array.isArray(req.user.following) ? req.user.following : [];
+    const userPrefs = Array.isArray(req.user.preferences) ? req.user.preferences : [];
+
+    const sourceFilters = [];
+    // Include user's own posts
+    sourceFilters.push({ author: userId });
+    if (followingIds.length > 0) sourceFilters.push({ author: { $in: followingIds } });
+    if (userPrefs.length > 0) sourceFilters.push({ category: { $in: userPrefs } });
+
+    const baseVisibilityFilters = {
       isHidden: false,
       $or: [
         { 'vanishMode.enabled': false },
         { 'vanishMode.vanishAt': { $gt: new Date() } }
       ]
-    })
+    };
+
+    const query = sourceFilters.length > 0
+      ? { $and: [ { $or: sourceFilters }, baseVisibilityFilters ] }
+      : baseVisibilityFilters; // if no sources, show recent visible posts
+
+    // Get posts
+    let posts = await Post.find(query)
     .populate('author', 'username avatar')
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(parseInt(limit));
+
+    // Fallback: if no matches for preferences/following, show recent visible posts
+    if (posts.length === 0 && (userPrefs.length > 0 || followingIds.length > 0)) {
+      posts = await Post.find(baseVisibilityFilters)
+        .populate('author', 'username avatar')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit));
+    }
 
     // Calculate if user has reacted to each post
     const postsWithUserReactions = posts.map(post => {

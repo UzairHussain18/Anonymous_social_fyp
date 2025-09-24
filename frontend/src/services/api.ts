@@ -13,10 +13,10 @@ const getBaseURL = () => {
   // For web platform, try localhost first, then fallback to IP
   if (Platform.OS === 'web') {
     // Try localhost first for web browsers
-    return `http://localhost:3000/api`;
+    return `http://localhost:5000/api`;
   }
   
-  return `http://${YOUR_COMPUTER_IP}:3000/api`;
+  return `http://${YOUR_COMPUTER_IP}:5000/api`;
 };
 
 const BASE_URL = getBaseURL();
@@ -186,10 +186,10 @@ export const postsAPI = {
   },
 
   getFeed: async (page: number = 1, limit: number = 20): Promise<PaginatedResponse<any>> => {
-    const response: AxiosResponse<PaginatedResponse<any>> = await api.get(
-      `/posts/feed?page=${page}&limit=${limit}`
-    );
-    return response.data;
+    const response: AxiosResponse<any> = await api.get(`/posts/feed?page=${page}&limit=${limit}`);
+    // Backend returns { success, posts, pagination }. Normalize to { success, data, pagination }
+    const { success, posts, pagination } = response.data || {};
+    return { success: !!success, data: posts || [], pagination } as PaginatedResponse<any>;
   },
 
   getExplorePosts: async (
@@ -217,12 +217,12 @@ export const postsAPI = {
   },
 
   getUserPosts: async (
-    userId: string,
+    username: string,
     page: number = 1,
     limit: number = 20
   ): Promise<PaginatedResponse<any>> => {
     const response: AxiosResponse<PaginatedResponse<any>> = await api.get(
-      `/posts/user/${userId}?page=${page}&limit=${limit}`
+      `/posts/user/${username}?page=${page}&limit=${limit}`
     );
     return response.data;
   },
@@ -241,6 +241,26 @@ export const postsAPI = {
 
   deletePost: async (postId: string): Promise<ApiResponse> => {
     const response: AxiosResponse<ApiResponse> = await api.delete(`/posts/${postId}`);
+    return response.data;
+  },
+};
+
+// Chat API
+export const chatAPI = {
+  getConversations: async (): Promise<any> => {
+    const response: AxiosResponse<any> = await api.get('/chat/conversations');
+    return response.data;
+  },
+  getMessages: async (
+    peerId: string,
+    page: number = 1,
+    limit: number = 30
+  ): Promise<any> => {
+    const response: AxiosResponse<any> = await api.get(`/chat/messages/${peerId}?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+  sendMessage: async (peerId: string, text: string): Promise<any> => {
+    const response: AxiosResponse<any> = await api.post(`/chat/messages/${peerId}`, { text });
     return response.data;
   },
 };

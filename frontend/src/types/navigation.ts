@@ -5,7 +5,8 @@ export type RootStackParamList = {
   WhisperWall: undefined;
   Profile: undefined;
   PostDetail: { postId: string };
-  UserProfile: { userId: string };
+  UserProfile: { username: string };
+  Chat: { peerId: string; username: string; avatar?: string };
   Settings: undefined;
   Notifications: undefined;
 };

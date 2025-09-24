@@ -1,20 +1,7 @@
-const fs = require('fs').promises;
-const path = require('path');
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
-// File paths
-const USERS_FILE = path.join(__dirname, '../storage/users.json');
-
-// Load users from file
-const loadUsers = async () => {
-  try {
-    const data = await fs.readFile(USERS_FILE, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    return [];
-  }
-};
-
-// Middleware to authenticate and authorize users
+// Authenticate token - MongoDB version
 const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -27,21 +14,11 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Extract user ID from token (simple file-based implementation)
-    const tokenParts = token.split('_');
-    if (tokenParts.length < 2) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token format'
-      });
-    }
+    // Verify JWT
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
 
-    const userId = parseInt(tokenParts[1]);
-    
-    // Load users and find user
-    const users = await loadUsers();
-    const user = users.find(u => u._id === userId);
-    
+    // Find user in MongoDB
+    const user = await User.findById(decoded.userId).select('-password');
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -49,11 +26,8 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Add user to request object (without password)
-    const { password, ...userData } = user;
-    req.user = userData;
+    req.user = user; // attach user to request
     next();
-
   } catch (error) {
     console.error('Authentication error:', error);
     res.status(500).json({
@@ -63,36 +37,30 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// Optional authentication - doesn't fail if no token
+// Optional authentication
 const optionalAuth = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1];
 
     if (token) {
-      const tokenParts = token.split('_');
-      if (tokenParts.length >= 2) {
-        const userId = parseInt(tokenParts[1]);
-        const users = await loadUsers();
-        const user = users.find(u => u._id === userId);
-        if (user) {
-          const { password, ...userData } = user;
-          req.user = userData;
-        }
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
+        const user = await User.findById(decoded.userId).select('-password');
+        if (user) req.user = user;
+      } catch (e) {
+        // ignore invalid token
       }
     }
-
     next();
   } catch (error) {
-    // Silently continue without authentication
     next();
   }
 };
 
-// Generate anonymous session ID for WhisperWall features
+// Generate anonymous session ID (same as before)
 const generateSessionId = (req, res, next) => {
   if (!req.sessionId) {
-    // Create a session ID based on IP + User Agent for anonymous users
     const crypto = require('crypto');
     const identifier = req.ip + req.get('User-Agent') + Date.now();
     req.sessionId = crypto.createHash('sha256').update(identifier).digest('hex');

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TextInput,
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import SimpleWebScrollView from '../../components/SimpleWebScrollView';
 
 const categories = [
@@ -25,14 +26,33 @@ const categories = [
 
 const ExploreScreen: React.FC = () => {
   const { theme } = useTheme();
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const { user, updateUserPreferences } = useAuth();
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(user?.preferences || []);
   const [searchQuery, setSearchQuery] = useState('');
 
+  useEffect(() => {
+    // Update context/preferences when selectedCategories change
+    if (updateUserPreferences) {
+      const prefs = selectedCategories.includes('all') ? [] : selectedCategories;
+      updateUserPreferences(prefs);
+    }
+  }, [selectedCategories]);
+
+  const toggleCategory = (categoryId: string) => {
+    if (categoryId === 'all') {
+      // Selecting 'All' clears other selections
+      setSelectedCategories(['all']);
+    } else {
+      let newSelection = selectedCategories.includes(categoryId)
+        ? selectedCategories.filter(c => c !== categoryId)
+        : [...selectedCategories.filter(c => c !== 'all'), categoryId];
+
+      setSelectedCategories(newSelection);
+    }
+  };
+
   const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-    },
+    container: { flex: 1, backgroundColor: theme.colors.background },
     header: {
       paddingHorizontal: theme.spacing.xl,
       paddingVertical: theme.spacing.lg,
@@ -40,12 +60,7 @@ const ExploreScreen: React.FC = () => {
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
     },
-    title: {
-      fontSize: 28,
-      fontWeight: 'bold',
-      color: theme.colors.text,
-      marginBottom: theme.spacing.md,
-    },
+    title: { fontSize: 28, fontWeight: 'bold', color: theme.colors.text, marginBottom: theme.spacing.md },
     searchContainer: {
       backgroundColor: theme.colors.background,
       borderRadius: theme.borderRadius.lg,
@@ -54,17 +69,9 @@ const ExploreScreen: React.FC = () => {
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
-    searchInput: {
-      fontSize: 16,
-      color: theme.colors.text,
-      padding: 0,
-    },
-    categoriesContainer: {
-      paddingVertical: theme.spacing.lg,
-    },
-    categoriesScroll: {
-      paddingLeft: theme.spacing.xl,
-    },
+    searchInput: { fontSize: 16, color: theme.colors.text, padding: 0 },
+    categoriesContainer: { paddingVertical: theme.spacing.lg },
+    categoriesScroll: { paddingLeft: theme.spacing.xl },
     categoryChip: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -76,82 +83,17 @@ const ExploreScreen: React.FC = () => {
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
-    categoryChipActive: {
-      backgroundColor: theme.colors.primary,
-      borderColor: theme.colors.primary,
-    },
-    categoryIcon: {
-      fontSize: 16,
-      marginRight: theme.spacing.sm,
-    },
-    categoryText: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: theme.colors.text,
-    },
-    categoryTextActive: {
-      color: theme.colors.textInverse,
-    },
-    content: {
-      flex: 1,
-      padding: theme.spacing.xl,
-    },
-    placeholderContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    placeholderIcon: {
-      fontSize: 80,
-      marginBottom: theme.spacing.lg,
-    },
-    placeholderTitle: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: theme.colors.text,
-      marginBottom: theme.spacing.md,
-      textAlign: 'center',
-    },
-    placeholderText: {
-      fontSize: 16,
-      color: theme.colors.textSecondary,
-      textAlign: 'center',
-      lineHeight: 24,
-      marginBottom: theme.spacing.xl,
-    },
-    exploreButton: {
-      backgroundColor: theme.colors.primary,
-      paddingHorizontal: theme.spacing.xl,
-      paddingVertical: theme.spacing.md,
-      borderRadius: theme.borderRadius.lg,
-      ...theme.shadows.medium,
-    },
-    exploreButtonText: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: theme.colors.textInverse,
-    },
-    statsContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-around',
-      paddingVertical: theme.spacing.lg,
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.lg,
-      marginBottom: theme.spacing.xl,
-    },
-    statItem: {
-      alignItems: 'center',
-    },
-    statNumber: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: theme.colors.primary,
-    },
-    statLabel: {
-      fontSize: 12,
-      color: theme.colors.textSecondary,
-      marginTop: theme.spacing.xs,
-    },
+    categoryChipActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+    categoryIcon: { fontSize: 16, marginRight: theme.spacing.sm },
+    categoryText: { fontSize: 14, fontWeight: '600', color: theme.colors.text },
+    categoryTextActive: { color: theme.colors.textInverse },
+    content: { flex: 1, padding: theme.spacing.xl },
+    placeholderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    placeholderIcon: { fontSize: 80, marginBottom: theme.spacing.lg },
+    placeholderTitle: { fontSize: 24, fontWeight: 'bold', color: theme.colors.text, marginBottom: theme.spacing.md, textAlign: 'center' },
+    placeholderText: { fontSize: 16, color: theme.colors.textSecondary, textAlign: 'center', lineHeight: 24, marginBottom: theme.spacing.xl },
+    exploreButton: { backgroundColor: theme.colors.primary, paddingHorizontal: theme.spacing.xl, paddingVertical: theme.spacing.md, borderRadius: theme.borderRadius.lg },
+    exploreButtonText: { fontSize: 16, fontWeight: '600', color: theme.colors.textInverse },
   });
 
   return (
@@ -172,29 +114,15 @@ const ExploreScreen: React.FC = () => {
 
       {/* Categories */}
       <View style={styles.categoriesContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesScroll}
-        >
-          {categories.map((category) => (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
+          {categories.map(cat => (
             <TouchableOpacity
-              key={category.id}
-              style={[
-                styles.categoryChip,
-                selectedCategory === category.id && styles.categoryChipActive,
-              ]}
-              onPress={() => setSelectedCategory(category.id)}
+              key={cat.id}
+              style={[styles.categoryChip, selectedCategories.includes(cat.id) && styles.categoryChipActive]}
+              onPress={() => toggleCategory(cat.id)}
             >
-              <Text style={styles.categoryIcon}>{category.icon}</Text>
-              <Text
-                style={[
-                  styles.categoryText,
-                  selectedCategory === category.id && styles.categoryTextActive,
-                ]}
-              >
-                {category.name}
-              </Text>
+              <Text style={styles.categoryIcon}>{cat.icon}</Text>
+              <Text style={[styles.categoryText, selectedCategories.includes(cat.id) && styles.categoryTextActive]}>{cat.name}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -202,41 +130,12 @@ const ExploreScreen: React.FC = () => {
 
       {/* Content */}
       <SimpleWebScrollView style={styles.content}>
-        {/* Community Stats */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>2.3K</Text>
-            <Text style={styles.statLabel}>Active Users</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>15.7K</Text>
-            <Text style={styles.statLabel}>Posts Today</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>89K</Text>
-            <Text style={styles.statLabel}>Total Echoes</Text>
-          </View>
-        </View>
-
         <View style={styles.placeholderContainer}>
           <Text style={styles.placeholderIcon}>🔍</Text>
-          <Text style={styles.placeholderTitle}>
-            Discover Amazing Content
-          </Text>
-          <Text style={styles.placeholderText}>
-            Explore trending posts, discover new users, and find content that matches your interests.
-          </Text>
-          <TouchableOpacity 
-            style={styles.exploreButton}
-            onPress={() => {
-              // For now, show a message that explore functionality is coming
-              // In the future, this could load and display posts
-              console.log('Explore functionality coming soon!');
-            }}
-          >
-            <Text style={styles.exploreButtonText}>
-              Start Exploring
-            </Text>
+          <Text style={styles.placeholderTitle}>Discover Amazing Content</Text>
+          <Text style={styles.placeholderText}>Explore trending posts, discover new users, and find content that matches your interests.</Text>
+          <TouchableOpacity style={styles.exploreButton} onPress={() => console.log('Explore coming soon!')}>
+            <Text style={styles.exploreButtonText}>Start Exploring</Text>
           </TouchableOpacity>
         </View>
       </SimpleWebScrollView>
