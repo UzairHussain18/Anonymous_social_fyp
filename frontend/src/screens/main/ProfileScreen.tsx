@@ -22,11 +22,14 @@ const ProfileScreen: React.FC = () => {
   const { user, logout } = useAuth();
   const navigation = useNavigation();
   const [userPosts, setUserPosts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadUserPosts = async () => {
-    if (!user?.username) return;
+    if (!user?.username) {
+      setLoading(false);
+      return;
+    }
     
     try {
       setLoading(true);
@@ -310,6 +313,7 @@ const ProfileScreen: React.FC = () => {
   };
 
   const menuItems = [
+    { icon: '💬', title: 'Messages', onPress: () => navigation.navigate('Messages' as never) },
     { icon: '⚙️', title: 'Settings', onPress: () => navigation.navigate('Settings' as never) },
     { icon: '🔔', title: 'Notifications', onPress: () => navigation.navigate('Notifications' as never) },
     { icon: '🎨', title: 'Themes', onPress: () => {} },

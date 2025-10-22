@@ -96,6 +96,27 @@ router.post('/messages/:peerId', authenticateToken, async (req, res) => {
   }
 });
 
+// POST /api/chat/read/:peerId - mark messages from peer as read
+router.post('/read/:peerId', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { peerId } = req.params;
+    const convo = await Conversation.getOrCreateBetween(userId, peerId);
+    let updated = 0;
+    convo.messages.forEach(m => {
+      if (String(m.sender) !== String(userId) && !m.readBy.some(id => String(id) === String(userId))) {
+        m.readBy.push(userId);
+        updated += 1;
+      }
+    });
+    if (updated > 0) await convo.save();
+    res.json({ success: true, updated });
+  } catch (e) {
+    console.error('Mark read error:', e);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = router;
 
 

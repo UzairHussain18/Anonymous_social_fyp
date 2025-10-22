@@ -20,8 +20,9 @@ const whisperPostSchema = new mongoose.Schema({
   content: {
     text: {
       type: String,
-      required: true,
-      maxlength: 2000
+      required: false,
+      maxlength: 2000,
+      default: ''
     },
     image: {
       type: String,
@@ -30,7 +31,30 @@ const whisperPostSchema = new mongoose.Schema({
     voiceNote: {
       type: String,
       default: null
-    }
+    },
+    media: [{
+      url: {
+        type: String,
+        required: true
+      },
+      type: {
+        type: String,
+        required: true,
+        enum: ['image', 'video', 'audio']
+      },
+      filename: {
+        type: String,
+        required: true
+      },
+      originalName: {
+        type: String,
+        required: true
+      },
+      size: {
+        type: Number,
+        required: true
+      }
+    }]
   },
   category: {
     type: String,

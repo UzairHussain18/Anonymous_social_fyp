@@ -1,5 +1,6 @@
 const express = require('express');
 const Post = require('../models/Post');
+const WhisperPost = require('../models/WhisperPost');
 const User = require('../models/User');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
@@ -8,7 +9,8 @@ const router = express.Router();
 
 // POST /api/posts - Create a new post
 router.post('/', authenticateToken, [
-  body('content.text').notEmpty().isLength({ max: 2000 }),
+  body('content.text').optional().isLength({ max: 2000 }),
+  body('content.media').optional().isArray(),
   body('category').notEmpty().isIn(['Gaming', 'Education', 'Beauty', 'Fitness', 'Music', 'Technology', 
     'Art', 'Food', 'Travel', 'Sports', 'Movies', 'Books', 'Fashion',
     'Photography', 'Comedy', 'Science', 'Politics', 'Business'])
@@ -26,6 +28,14 @@ router.post('/', authenticateToken, [
     const { content, category, visibility, disguiseAvatar, vanishMode, tags } = req.body;
     const userId = req.user._id;
 
+    // Validate that post has either text or media
+    if (!content.text?.trim() && (!content.media || content.media.length === 0)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Post must have either text content or media'
+      });
+    }
+
     const post = new Post({
       author: userId,
       content,
@@ -36,7 +46,9 @@ router.post('/', authenticateToken, [
       tags: tags || []
     });
 
+    console.log('💾 Saving post with content:', JSON.stringify(content, null, 2)); // Debug log
     await post.save();
+    console.log('✅ Post saved with ID:', post._id); // Debug log
 
     // Update user stats
     await User.findByIdAndUpdate(userId, {
@@ -113,12 +125,50 @@ router.get('/feed', authenticateToken, async (req, res) => {
       ? { $and: [ { $or: sourceFilters }, baseVisibilityFilters ] }
       : baseVisibilityFilters; // if no sources, show recent visible posts
 
-    // Get posts
+    // Get regular posts
     let posts = await Post.find(query)
     .populate('author', 'username avatar')
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(parseInt(limit));
+
+    // Get WhisperWall posts
+    const whisperPosts = await WhisperPost.find({ isHidden: false })
+    .sort({ createdAt: -1 })
+    .limit(5); // Limit WhisperWall posts to avoid overwhelming the feed
+
+    // Convert WhisperWall posts to match regular post format
+    const formattedWhisperPosts = whisperPosts.map(post => ({
+      _id: post._id,
+      content: post.content,
+      category: post.category,
+      reactions: post.reactions,
+      comments: post.comments,
+      createdAt: post.createdAt,
+      author: {
+        username: `👻 ${post.randomUsername}`,
+        avatar: null
+      },
+      isWhisperWall: true,
+      expiresAt: post.expiresAt,
+      tags: post.tags
+    }));
+
+    // Combine posts and WhisperWall posts
+    const allPosts = [...posts, ...formattedWhisperPosts]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, parseInt(limit));
+
+    console.log('📥 Retrieved posts:', posts.length, 'WhisperWall posts:', whisperPosts.length); // Debug log
+    allPosts.forEach((post, index) => {
+      console.log(`📄 Post ${index + 1}:`, {
+        id: post._id,
+        text: post.content?.text,
+        mediaCount: post.content?.media?.length || 0,
+        media: post.content?.media,
+        isWhisperWall: post.isWhisperWall
+      }); // Debug log
+    });
 
     // Fallback: if no matches for preferences/following, show recent visible posts
     if (posts.length === 0 && (userPrefs.length > 0 || followingIds.length > 0)) {
@@ -130,7 +180,16 @@ router.get('/feed', authenticateToken, async (req, res) => {
     }
 
     // Calculate if user has reacted to each post
-    const postsWithUserReactions = posts.map(post => {
+    const postsWithUserReactions = allPosts.map(post => {
+      // Skip user reaction calculation for WhisperWall posts
+      if (post.isWhisperWall) {
+        return {
+          ...post,
+          userReaction: null,
+          userHasReacted: false
+        };
+      }
+      
       const userReaction = Object.keys(post.reactions).find(reactionType => 
         post.reactions[reactionType].some(r => r.user.equals(userId))
       );
@@ -148,12 +207,90 @@ router.get('/feed', authenticateToken, async (req, res) => {
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        hasMore: posts.length === parseInt(limit)
+        hasMore: postsWithUserReactions.length === parseInt(limit)
       }
     });
 
   } catch (error) {
     console.error('Get feed error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// GET /api/posts/search - Search posts
+router.get('/search', optionalAuth, async (req, res) => {
+  try {
+    const { q, category, page = 1, limit = 20 } = req.query;
+    
+    if (!q || q.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: 'Search query must be at least 2 characters'
+      });
+    }
+
+    const skip = (page - 1) * limit;
+    
+    const searchQuery = {
+      $and: [
+        {
+          $or: [
+            { 'content.text': { $regex: q, $options: 'i' } },
+            { category: { $regex: q, $options: 'i' } },
+            { tags: { $regex: q, $options: 'i' } }
+          ]
+        },
+        {
+          isHidden: false,
+          $or: [
+            { 'vanishMode.enabled': false },
+            { 'vanishMode.vanishAt': { $gt: new Date() } }
+          ]
+        }
+      ]
+    };
+
+    if (category) {
+      searchQuery.$and[0].category = category;
+    }
+
+    const posts = await Post.find(searchQuery)
+      .populate('author', 'username avatar')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    // Add user reaction info if authenticated
+    let postsWithUserReactions = posts;
+    if (req.user) {
+      postsWithUserReactions = posts.map(post => {
+        const userReaction = Object.keys(post.reactions).find(reactionType => 
+          post.reactions[reactionType].some(r => r.user.equals(req.user._id))
+        );
+        
+        return {
+          ...post.toObject(),
+          userReaction: userReaction || null,
+          userHasReacted: !!userReaction
+        };
+      });
+    }
+
+    res.json({
+      success: true,
+      posts: postsWithUserReactions,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        hasMore: posts.length === parseInt(limit)
+      }
+    });
+
+  } catch (error) {
+    console.error('Search posts error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'

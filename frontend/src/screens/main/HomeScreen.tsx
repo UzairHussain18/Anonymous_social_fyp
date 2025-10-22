@@ -15,7 +15,9 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../context/AuthContext';
 import { postsAPI } from '../../services/api';
+import { reactionsAPI } from '../../services/reactions';
 import { RootStackParamList } from '../../types/navigation';
+import Toast from 'react-native-toast-message';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -60,6 +62,59 @@ const HomeScreen: React.FC = () => {
     }, [user])
   );
 
+  const handleReaction = async (postId: string, reactionType: 'funny' | 'rage' | 'shock' | 'relatable' | 'love' | 'thinking') => {
+    try {
+      const post = posts.find(p => p._id === postId);
+      if (!post) return;
+      
+      if (post.userReaction === reactionType) {
+        await reactionsAPI.removeReaction(postId);
+        Toast.show({
+          type: 'success',
+          text1: 'Reaction removed',
+        });
+      } else {
+        await reactionsAPI.addReaction(postId, reactionType);
+        Toast.show({
+          type: 'success',
+          text1: 'Reaction added',
+        });
+      }
+      // Refresh the posts to get updated reaction counts
+      await loadPosts();
+    } catch (error) {
+      console.error('Error handling reaction:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to update reaction',
+      });
+    }
+  };
+
+  const formatTimeRemaining = (vanishAt: string) => {
+    const now = new Date();
+    const vanishTime = new Date(vanishAt);
+    const diff = vanishTime.getTime() - now.getTime();
+    
+    if (diff <= 0) return 'Expired';
+    
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (hours > 0) return `${hours}h ${minutes}m left`;
+    return `${minutes}m left`;
+  };
+
+  const handleShare = (post: any) => {
+    // Simple share functionality - you can enhance this later
+    Toast.show({
+      type: 'info',
+      text1: 'Share',
+      text2: `Shared post by @${post.author?.username || 'Unknown'}`,
+    });
+  };
+
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
     header: {
@@ -90,6 +145,23 @@ const HomeScreen: React.FC = () => {
       marginBottom: theme.spacing.sm,
     },
     subtitle: { fontSize: 16, color: theme.colors.textSecondary },
+    actionIcons: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    iconButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.colors.surface,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...theme.shadows.small,
+    },
+    iconText: {
+      fontSize: 18,
+    },
     content: { flex: 1, padding: theme.spacing.xl },
     placeholderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     placeholderIcon: { fontSize: 80, marginBottom: theme.spacing.lg },
@@ -149,6 +221,19 @@ const HomeScreen: React.FC = () => {
     postDate: { fontSize: 12 },
     postReactions: { flexDirection: 'row', alignItems: 'center' },
     reactionText: { fontSize: 12, marginLeft: theme.spacing.sm },
+    commentButton: {
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.borderRadius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    commentButtonText: {
+      fontSize: 14,
+      color: theme.colors.text,
+      fontWeight: '600',
+    },
     mediaContainer: { marginVertical: theme.spacing.md },
     mediaItem: { marginRight: theme.spacing.sm },
     mediaContent: {
@@ -163,6 +248,79 @@ const HomeScreen: React.FC = () => {
     avatarPlaceholder: { width: 40, height: 40, borderRadius: 20, marginRight: theme.spacing.sm, justifyContent: 'center', alignItems: 'center' },
     username: { fontSize: 16, fontWeight: 'bold' },
     reactionEmoji: { fontSize: 20, marginRight: theme.spacing.xs },
+    postTags: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      marginBottom: theme.spacing.sm,
+      gap: theme.spacing.sm,
+    },
+    whisperTag: {
+      fontSize: 12,
+      fontWeight: '600',
+      backgroundColor: 'rgba(255, 107, 53, 0.1)',
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.borderRadius.sm,
+    },
+    hashtagsContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      marginTop: theme.spacing.xs,
+    },
+    hashtag: {
+      fontSize: 12,
+      fontWeight: '500',
+      marginRight: theme.spacing.sm,
+      marginBottom: theme.spacing.xs,
+    },
+    actionButtons: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      paddingVertical: theme.spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+      marginTop: theme.spacing.sm,
+    },
+    actionBtn: {
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.borderRadius.md,
+      flex: 1,
+    },
+    activeActionBtn: {
+      backgroundColor: theme.colors.primary + '20',
+    },
+    actionBtnIcon: {
+      fontSize: 20,
+      marginBottom: theme.spacing.xs,
+    },
+    actionBtnText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.text,
+      marginBottom: theme.spacing.xs,
+    },
+    actionBtnCount: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: theme.colors.textSecondary,
+    },
+    mediaContainer: {
+      marginVertical: theme.spacing.sm,
+    },
+    mediaItem: {
+      marginRight: theme.spacing.sm,
+    },
+    mediaContent: {
+      height: 200,
+      borderRadius: theme.borderRadius.md,
+      backgroundColor: theme.colors.background,
+    },
+    videoContainer: {
+      borderRadius: theme.borderRadius.md,
+      overflow: 'hidden',
+    },
   });
 
   const getGreeting = () => {
@@ -174,8 +332,12 @@ const HomeScreen: React.FC = () => {
 
   const renderMedia = (media: any[]) => {
     if (!media || media.length === 0) return null;
+    
+    console.log('🎬 Rendering media:', media); // Debug log
+    
     const screenWidth = Dimensions.get('window').width;
-    const mediaWidth = screenWidth - 40;
+    const imageWidth = Math.min(screenWidth - 80, 300); // Max 300px width, with padding
+    
     return (
       <View style={styles.mediaContainer}>
         <FlatList
@@ -183,19 +345,28 @@ const HomeScreen: React.FC = () => {
           horizontal
           showsHorizontalScrollIndicator={false}
           keyExtractor={(_, index) => index.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.mediaItem}>
-              {item.mimetype?.startsWith('video/') ? (
-                <View style={styles.videoContainer}>
-                  <View style={[styles.mediaContent, { width: mediaWidth * 0.8, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }]}>
-                    <Text style={{ color: '#fff' }}>Video: {item.url}</Text>
+          renderItem={({ item }) => {
+            console.log('🖼️ Rendering media item:', item); // Debug log
+            return (
+              <View style={styles.mediaItem}>
+                {item.type === 'video' ? (
+                  <View style={styles.videoContainer}>
+                    <View style={[styles.mediaContent, { width: imageWidth, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }]}>
+                      <Text style={{ color: '#fff' }}>🎥 Video</Text>
+                    </View>
                   </View>
-                </View>
-              ) : (
-                <Image source={{ uri: item.url }} style={[styles.mediaContent, { width: mediaWidth * 0.8 }]} resizeMode="cover" />
-              )}
-            </View>
-          )}
+                ) : (
+                  <Image 
+                    source={{ uri: item.url }} 
+                    style={[styles.mediaContent, { width: imageWidth }]} 
+                    resizeMode="cover"
+                    onError={(error) => console.log('❌ Image load error:', error.nativeEvent.error, 'URL:', item.url)}
+                    onLoad={() => console.log('✅ Image loaded successfully:', item.url)}
+                  />
+                )}
+              </View>
+            );
+          }}
         />
       </View>
     );
@@ -216,6 +387,16 @@ const HomeScreen: React.FC = () => {
           <View style={styles.headerText}>
             <Text style={styles.greeting}>{getGreeting()}, {user?.username}! 👋</Text>
             <Text style={styles.subtitle}>Ready to echo some thoughts today?</Text>
+          </View>
+          
+          {/* Action Icons */}
+          <View style={styles.actionIcons}>
+            <TouchableOpacity 
+              style={styles.iconButton} 
+              onPress={() => navigation.navigate('Notifications' as never)}
+            >
+              <Text style={styles.iconText}>🔔</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -250,25 +431,68 @@ const HomeScreen: React.FC = () => {
                 </View>
                 <Text style={[styles.postDate, { color: theme.colors.textSecondary }]}>{new Date(post.createdAt).toLocaleDateString()}</Text>
               </View>
-              {post.category && <Text style={[styles.postCategory, { color: theme.colors.primary }]}>#{post.category}</Text>}
+              <View style={styles.postTags}>
+                {post.category && <Text style={[styles.postCategory, { color: theme.colors.primary }]}>#{post.category}</Text>}
+                {post.isWhisperWall && (
+                  <Text style={[styles.whisperTag, { color: theme.colors.warning || '#FF6B35' }]}>
+                    👻 WhisperWall • {formatTimeRemaining(post.expiresAt)}
+                  </Text>
+                )}
+                {post.vanishMode?.enabled && !post.isWhisperWall && (
+                  <Text style={[styles.whisperTag, { color: theme.colors.warning || '#FF6B35' }]}>
+                    👻 WhisperWall • {formatTimeRemaining(post.vanishMode.vanishAt)}
+                  </Text>
+                )}
+                {post.tags && post.tags.length > 0 && (
+                  <View style={styles.hashtagsContainer}>
+                    {post.tags.map((tag: string, index: number) => (
+                      <Text key={index} style={[styles.hashtag, { color: theme.colors.secondary || '#6B73FF' }]}>
+                        #{tag}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+              </View>
               {post.content?.text && <Text style={[styles.postText, { color: theme.colors.text }]} numberOfLines={3}>{post.content.text}</Text>}
               {renderMedia(post.content.media)}
-              <View style={styles.postMeta}>
-                <View style={styles.postReactions}>
-                  {post.userReaction && (
-                    <Text style={styles.reactionEmoji}>
-                      {post.userReaction === 'love' ? '❤️' :
-                       post.userReaction === 'funny' ? '😂' :
-                       post.userReaction === 'rage' ? '😡' :
-                       post.userReaction === 'shock' ? '😱' :
-                       post.userReaction === 'relatable' ? '💯' :
-                       '🤔'}
-                    </Text>
-                  )}
-                  <Text style={[styles.reactionText, { color: theme.colors.textSecondary }]}>
-                    {post.reactionCounts?.total || 0} reactions • {post.comments?.length || 0} comments
+              
+              {/* Like, Comment, Share Actions */}
+              <View style={styles.actionButtons}>
+                <TouchableOpacity 
+                  style={[styles.actionBtn, post.userReaction && styles.activeActionBtn]}
+                  onPress={() => handleReaction(post._id, 'love')}
+                >
+                  <Text style={styles.actionBtnIcon}>
+                    {post.userReaction ? '👍' : '👍'}
                   </Text>
-                </View>
+                  <Text style={styles.actionBtnText}>
+                    {post.userReaction ? 'Liked' : 'Like'}
+                  </Text>
+                  <Text style={styles.actionBtnCount}>{post.reactionCounts?.total || 0}</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.actionBtn}
+                  onPress={() => navigation.navigate('PostDetail', { postId: post._id })}
+                >
+                  <Text style={styles.actionBtnIcon}>💬</Text>
+                  <Text style={styles.actionBtnText}>Comment</Text>
+                  <Text style={styles.actionBtnCount}>{post.comments?.length || 0}</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.actionBtn}
+                  onPress={() => handleShare(post)}
+                >
+                  <Text style={styles.actionBtnIcon}>📤</Text>
+                  <Text style={styles.actionBtnText}>Share</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.postMeta}>
+                <Text style={[styles.reactionText, { color: theme.colors.textSecondary }]}>
+                  {post.reactionCounts?.total || 0} likes • {post.comments?.length || 0} comments
+                </Text>
               </View>
             </TouchableOpacity>
           ))

@@ -272,8 +272,7 @@ router.get('/search', async (req, res) => {
       $or: [
         { username: { $regex: q, $options: 'i' } },
         { bio: { $regex: q, $options: 'i' } }
-      ],
-      'settings.privacy.allowDiscovery': true
+      ]
     };
 
     if (category) {
@@ -293,6 +292,29 @@ router.get('/search', async (req, res) => {
 
   } catch (error) {
     console.error('Search users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// GET /api/user/list - List all users (for debugging)
+router.get('/list', async (req, res) => {
+  try {
+    const users = await User.find({})
+      .select('username avatar bio')
+      .limit(50);
+    
+    console.log('📋 All users in database:', users.map(u => u.username));
+    
+    res.json({
+      success: true,
+      users,
+      count: users.length
+    });
+  } catch (error) {
+    console.error('List users error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'

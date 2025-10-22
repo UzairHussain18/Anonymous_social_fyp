@@ -32,20 +32,40 @@ const { uploadMiddleware, getFileUrl } = require('./middleware/upload');
 
 // --- CORS Setup ---
 const corsOptions = {
-  origin: [
-    'http://localhost:8081',   // Expo web
-    'http://192.168.10.6:8081' // Mobile device via LAN
-  ],
+  origin: true, // Allow all origins for development
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true
 };
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Preflight handler
+
+// Handle preflight requests for all routes
+app.options('*', cors(corsOptions));
+
+// Additional preflight handling
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.status(200).end();
+    return;
+  }
+  next();
+});
 
 // --- Body parser ---
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// --- Request logging middleware ---
+app.use((req, res, next) => {
+  console.log(`📥 ${req.method} ${req.url} - ${new Date().toISOString()}`);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('📦 Request body:', JSON.stringify(req.body, null, 2));
+  }
+  next();
+});
 
 // --- Rate limiter ---
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
@@ -57,13 +77,25 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // --- MongoDB connection ---
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/whisper-echo', {
+    // Use Atlas URI from environment or fallback
+    const mongoURI = process.env.MONGODB_URI || 'mongodb+srv://blog-app:blog-app@blog-app.zi3j2.mongodb.net/whisper-echo?retryWrites=true&w=majority';
+    
+    console.log('🔌 Connecting to MongoDB Atlas...');
+    
+    await mongoose.connect(mongoURI, {
       useNewUrlParser: true,
-      useUnifiedTopology: true
+      useUnifiedTopology: true,
     });
-    console.log('✅ Connected to MongoDB');
-  } catch (err) {
-    console.error('❌ MongoDB connection error:', err);
+    
+    console.log('✅ MongoDB Atlas connected successfully!');
+    console.log('📊 Database:', mongoose.connection.name);
+    
+  } catch (error) {
+    console.error('❌ MongoDB connection error:', error.message);
+    console.log('💡 Make sure your Atlas cluster is running and IP is whitelisted');
+    
+    // Don't exit - let the server run without database for debugging
+    console.log('📱 Server will start anyway for debugging...');
   }
 };
 connectDB();
@@ -123,11 +155,34 @@ cron.schedule('0 0 * * *', async () => {
 // --- Health check ---
 app.get('/health', (req, res) => res.json({ status: 'OK', timestamp: new Date().toISOString() }));
 
+// --- Test endpoint ---
+app.get('/api/test', (req, res) => {
+  console.log('🧪 Test endpoint hit!');
+  res.json({ 
+    success: true, 
+    message: 'Backend is working!', 
+    timestamp: new Date().toISOString(),
+    port: PORT || 3001
+  });
+});
+
+app.post('/api/test', (req, res) => {
+  console.log('🧪 Test POST endpoint hit!');
+  console.log('📦 POST body:', req.body);
+  res.json({ 
+    success: true, 
+    message: 'POST endpoint is working!', 
+    receivedData: req.body,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // --- Start server ---
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+  console.log(`📱 Mobile access: http://192.168.10.2:${PORT}/health`);
 });
 
 module.exports = { app, io };

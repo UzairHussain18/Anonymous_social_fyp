@@ -48,14 +48,9 @@ const LoginScreen: React.FC = () => {
     };
   });
 
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email) {
-      setEmailError('Email is required');
-      return false;
-    }
-    if (!emailRegex.test(email)) {
-      setEmailError('Please enter a valid email');
+  const validateEmail = (value: string): boolean => {
+    if (!value) {
+      setEmailError('Email or username is required');
       return false;
     }
     setEmailError('');
@@ -285,7 +280,7 @@ const LoginScreen: React.FC = () => {
             <View style={styles.form}>
               {/* Email Input */}
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Email</Text>
+                <Text style={styles.label}>Email or Username</Text>
                 <TextInput
                   style={[
                     styles.input,
@@ -296,7 +291,7 @@ const LoginScreen: React.FC = () => {
                     setEmail(text);
                     setEmailError('');
                   }}
-                  placeholder="Enter your email"
+                  placeholder="Enter your email or username"
                   placeholderTextColor={theme.colors.textSecondary}
                   keyboardType="email-address"
                   autoCapitalize="none"

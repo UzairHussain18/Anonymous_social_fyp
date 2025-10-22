@@ -9,8 +9,9 @@ const postSchema = new mongoose.Schema({
   content: {
     text: {
       type: String,
-      required: true,
-      maxlength: 2000
+      required: false,
+      maxlength: 2000,
+      default: ''
     },
     image: {
       type: String,
@@ -19,7 +20,30 @@ const postSchema = new mongoose.Schema({
     voiceNote: {
       type: String,
       default: null
-    }
+    },
+    media: [{
+      url: {
+        type: String,
+        required: true
+      },
+      type: {
+        type: String,
+        required: true,
+        enum: ['image', 'video', 'audio']
+      },
+      filename: {
+        type: String,
+        required: true
+      },
+      originalName: {
+        type: String,
+        required: true
+      },
+      size: {
+        type: Number,
+        required: true
+      }
+    }]
   },
   category: {
     type: String,
@@ -142,7 +166,7 @@ postSchema.methods.addReaction = async function(userId, reactionType) {
     love: this.reactions.love.length,
     thinking: this.reactions.thinking.length
   };
-  this.reactionCounts.total = Object.values(this.reactionCounts).reduce((a, b) => a + b, 0) - this.reactionCounts.total;
+  this.reactionCounts.total = Object.values(this.reactionCounts).reduce((a, b) => a + b, 0);
   
   await this.calculateTrendingScore();
   return this.save();
@@ -163,7 +187,7 @@ postSchema.methods.removeReaction = async function(userId) {
     love: this.reactions.love.length,
     thinking: this.reactions.thinking.length
   };
-  this.reactionCounts.total = Object.values(this.reactionCounts).reduce((a, b) => a + b, 0) - this.reactionCounts.total;
+  this.reactionCounts.total = Object.values(this.reactionCounts).reduce((a, b) => a + b, 0);
   
   await this.calculateTrendingScore();
   return this.save();

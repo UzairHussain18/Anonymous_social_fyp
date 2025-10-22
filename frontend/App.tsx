@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar, View, Platform, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
+import { navigationRef } from './src/navigation/navigationRef';
 import { createStackNavigator } from '@react-navigation/stack';
 import Toast from 'react-native-toast-message';
 
@@ -78,6 +79,7 @@ const AppContent = () => {
         translucent={false}
       />
       <NavigationContainer
+        ref={navigationRef}
         theme={{
           dark: theme.dark,
           colors: {

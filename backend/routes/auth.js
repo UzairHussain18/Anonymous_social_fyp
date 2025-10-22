@@ -21,7 +21,8 @@ const validateSignup = [
 ];
 
 const validateLogin = [
-  body('email').isEmail().normalizeEmail(),
+  body('identifier').optional().isString().trim(),
+  body('email').optional().isEmail().normalizeEmail(),
   body('password').notEmpty().withMessage('Password is required')
 ];
 
@@ -75,8 +76,10 @@ router.post('/login', validateLogin, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Validation failed', errors: errors.array() });
     }
 
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    const { email, identifier, password } = req.body;
+    const lookup = identifier || email;
+    if (!lookup) return res.status(400).json({ success: false, message: 'Email or username is required' });
+    const user = await User.findOne({ $or: [{ email: lookup }, { username: lookup }] });
     if (!user) return res.status(400).json({ success: false, message: 'Invalid email or password' });
 
     const isPasswordValid = await user.comparePassword(password);

@@ -27,12 +27,12 @@ const WhisperWallScreen: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const moods = [
-    { id: 'vent', name: 'Vent', icon: '😤', color: '#FF4D6D' },
-    { id: 'confession', name: 'Confession', icon: '🤫', color: '#A259FF' },
-    { id: 'advice', name: 'Advice', icon: '💡', color: '#00FFD1' },
-    { id: 'random', name: 'Random', icon: '🎲', color: '#FFB800' },
-    { id: 'happy', name: 'Happy', icon: '😊', color: '#32CD32' },
-    { id: 'sad', name: 'Sad', icon: '😢', color: '#4682B4' },
+    { id: 'Vent', name: 'Vent', icon: '😤', color: '#FF4D6D' },
+    { id: 'Confession', name: 'Confession', icon: '🤫', color: '#A259FF' },
+    { id: 'Advice', name: 'Advice', icon: '💡', color: '#00FFD1' },
+    { id: 'Random', name: 'Random', icon: '🎲', color: '#FFB800' },
+    { id: 'Comedy', name: 'Happy', icon: '😊', color: '#32CD32' },
+    { id: 'Music', name: 'Sad', icon: '😢', color: '#4682B4' },
   ];
 
   const modalScale = useSharedValue(0);
@@ -74,6 +74,7 @@ const WhisperWallScreen: React.FC = () => {
           text: whisperText.trim(),
         },
         category: selectedMood,
+        tags: ['whisperwall', 'disappearing', selectedMood], // Add WhisperWall hashtags
       };
 
       const response = await whisperWallAPI.createWhisperPost(whisperData);

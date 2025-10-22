@@ -4,19 +4,22 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useTheme } from '../context/ThemeContext';
+import NotificationBell from '../components/NotificationBell';
 
 // Import screens (we'll create these)
 import HomeScreen from '../screens/main/HomeScreen';
-import ExploreScreen from '../screens/main/ExploreScreen';
+import SearchScreen from '../screens/main/SearchScreen';
 import WhisperWallScreen from '../screens/main/WhisperWallScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import CreatePostScreen from '../screens/main/CreatePostScreen';
+import MessengerScreen from '../screens/main/MessengerScreen';
 
 // Import additional screens
 import PostDetailScreen from '../screens/main/PostDetailScreen';
 import UserProfileScreen from '../screens/main/UserProfileScreen';
 import SettingsScreen from '../screens/main/SettingsScreen';
 import ChatScreen from '../screens/main/ChatScreen';
+import MessagesScreen from '../screens/main/MessagesScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
 
 const Tab = createBottomTabNavigator();
@@ -150,11 +153,11 @@ const TabNavigator: React.FC = () => {
         }}
       />
       <Tab.Screen
-        name="Explore"
-        component={ExploreScreen}
+        name="Search"
+        component={SearchScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon name="Explore" focused={focused} icon="🔍" />
+            <TabIcon name="Search" focused={focused} icon="🔍" />
           ),
         }}
       />
@@ -176,6 +179,15 @@ const TabNavigator: React.FC = () => {
         options={{
           tabBarIcon: ({ focused }) => (
             <TabIcon name="Whispers" focused={focused} icon="👻" />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Messenger"
+        component={MessengerScreen}
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon name="Messages" focused={focused} icon="💬" />
           ),
         }}
       />
@@ -241,6 +253,11 @@ const MainNavigator: React.FC = () => {
         options={{ headerShown: false }}
       />
       <Stack.Screen
+        name="Messages"
+        component={MessagesScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
         name="Settings"
         component={SettingsScreen}
         options={{
@@ -252,6 +269,13 @@ const MainNavigator: React.FC = () => {
         component={NotificationsScreen}
         options={{
           title: 'Notifications'
+        }}
+      />
+      <Stack.Screen
+        name="Messenger"
+        component={MessengerScreen}
+        options={{
+          title: 'Messages'
         }}
       />
     </Stack.Navigator>

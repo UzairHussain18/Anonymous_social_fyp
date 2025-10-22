@@ -53,7 +53,10 @@ const UserProfileScreen: React.FC = () => {
       setHasMore(pagination ? !!pagination.hasMore : newPosts.length >= 20);
       if (!reset) setPage(p => p + 1);
     } catch (e) {
-      // noop for now
+      console.log('UserProfile load error', e);
+      // keep screen visible; show minimal header
+      setProfile((prev: any) => prev || { username, bio: '', followers: [], following: [], stats: {} });
+      if (reset) setPosts([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -100,6 +103,11 @@ const UserProfileScreen: React.FC = () => {
 
   const Header = () => (
     <View style={styles.headerContainer}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+        <TouchableOpacity onPress={() => (navigation as any).goBack()} style={{ paddingVertical: 6, paddingRight: 12 }}>
+          <Text style={{ color: theme.colors.primary, fontWeight: '700' }}>Back</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.headerTop}>
         <View style={styles.avatarWrapper}>
           {profile?.avatar ? (
@@ -162,11 +170,11 @@ const UserProfileScreen: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <FlatList
         ListHeaderComponent={<Header />}
         data={posts}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item, index) => item?._id || `post-${index}`}
         renderItem={renderPost}
         contentContainerStyle={{ padding: theme.spacing.xl }}
         onEndReachedThreshold={0.4}

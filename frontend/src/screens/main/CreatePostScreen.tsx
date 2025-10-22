@@ -9,6 +9,7 @@ import {
   Alert,
   Image,
   FlatList,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
@@ -51,14 +52,53 @@ const CreatePostScreen: React.FC = () => {
   };
 
   const selectMedia = async () => {
-    const hasPermission = await requestPermissions();
-    if (!hasPermission) return;
+    if (Platform.OS === 'web') {
+      // Web file upload
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*,video/*';
+      input.multiple = true;
+      
+      input.onchange = (e) => {
+        const files = (e.target as HTMLInputElement).files;
+        if (files) {
+          handleWebFiles(files);
+        }
+      };
+      
+      input.click();
+    } else {
+      // Mobile file picker
+      const hasPermission = await requestPermissions();
+      if (!hasPermission) return;
 
-    Alert.alert('Select Media', 'Choose how to add media', [
-      { text: 'Camera', onPress: () => openCamera() },
-      { text: 'Gallery', onPress: () => openGallery() },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+      Alert.alert('Select Media', 'Choose how to add media', [
+        { text: 'Camera', onPress: () => openCamera() },
+        { text: 'Gallery', onPress: () => openGallery() },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+    }
+  };
+
+  const handleWebFiles = (files: FileList) => {
+    Array.from(files).forEach(file => {
+      if (selectedMedia.length >= 5) {
+        Toast.show({ type: 'error', text1: 'Limit Reached', text2: 'Max 5 media per post' });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const mediaItem = {
+          uri: e.target?.result as string,
+          type: file.type,
+          name: file.name,
+          mediaType: file.type.startsWith('video/') ? 'video' as const : 'photo' as const,
+        };
+        setSelectedMedia(prev => [...prev, mediaItem]);
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const openCamera = async () => {
@@ -131,10 +171,13 @@ const CreatePostScreen: React.FC = () => {
     if (selectedMedia.length > 0) {
       setIsUploadingMedia(true);
       try {
+        console.log('📤 Uploading media:', selectedMedia); // Debug log
         const uploadResponse = await mediaAPI.uploadMultiple(selectedMedia);
+        console.log('📥 Upload response:', uploadResponse); // Debug log
         if (uploadResponse.success && uploadResponse.files) uploadedMedia = uploadResponse.files;
         else throw new Error(uploadResponse.message || 'Media upload failed');
       } catch (err: any) {
+        console.log('❌ Upload error:', err); // Debug log
         Toast.show({ type: 'error', text1: 'Upload Failed', text2: err.message });
         setIsUploadingMedia(false);
         setIsCreating(false);
@@ -144,14 +187,27 @@ const CreatePostScreen: React.FC = () => {
     }
 
     const postData = {
-      content: { text: postText.trim(), media: uploadedMedia },
+      content: { 
+        text: postText.trim() || '', 
+        media: uploadedMedia.map(file => ({
+          url: file.url,
+          type: file.mimetype.startsWith('video/') ? 'video' : 
+                file.mimetype.startsWith('audio/') ? 'audio' : 'image',
+          filename: file.filename,
+          originalName: file.originalname,
+          size: file.size
+        }))
+      },
       category: selectedCategory,
       visibility,
       vanishMode: vanishMode ? { enabled: true, duration: vanishDuration } : { enabled: false },
     };
 
+    console.log('📝 Creating post with data:', postData); // Debug log
+
     try {
       const response = await postsAPI.createPost(postData);
+      console.log('📥 Post creation response:', response); // Debug log
       if (response.success) {
         Toast.show({ type: 'success', text1: 'Success', text2: 'Post created!' });
         setPostText('');

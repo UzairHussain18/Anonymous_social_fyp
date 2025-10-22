@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { RootStackParamList } from '../../types/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { chatAPI } from '../../services/api';
@@ -19,6 +19,7 @@ const ChatScreen: React.FC = () => {
   const { theme } = useTheme();
   const route = useRoute<ChatRouteProp>();
   const { user } = useAuth();
+  const navigation = useNavigation();
   const { peerId, username, avatar } = route.params;
 
   const [messages, setMessages] = useState<MessageItem[]>([]);
@@ -84,7 +85,10 @@ const ChatScreen: React.FC = () => {
           createdAt: m.createdAt,
           senderId: m.sender,
         }));
-        setMessages(msgs.reverse()); // inverted list, so latest at index 0
+        // Backend returns oldest->newest already. Keep order so newest appears at the bottom.
+        setMessages(msgs);
+        // Mark messages as read when opening chat
+        chatAPI.markRead(peerId).catch(() => {});
       } catch (e) {
         setMessages([]);
       }
@@ -101,7 +105,13 @@ const ChatScreen: React.FC = () => {
       createdAt: new Date().toISOString(),
       senderId: user?._id || 'me',
     };
-    setMessages(prev => [newMsg, ...prev]);
+    setMessages(prev => {
+      const updated = [...prev, newMsg];
+      requestAnimationFrame(() => {
+        listRef.current?.scrollToEnd({ animated: true });
+      });
+      return updated;
+    });
     setInput('');
     chatAPI.sendMessage(peerId, trimmed).catch(() => {
       // Optionally handle send failure UI
@@ -125,6 +135,9 @@ const ChatScreen: React.FC = () => {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => { chatAPI.markRead(peerId).finally(() => (navigation as any).goBack()); }} style={{ marginRight: 12 }}>
+          <Text style={{ color: theme.colors.primary, fontWeight: '700' }}>Back</Text>
+        </TouchableOpacity>
         {avatar ? (
           <Image source={{ uri: avatar }} style={styles.headerAvatar} />
         ) : (
@@ -140,7 +153,9 @@ const ChatScreen: React.FC = () => {
         data={messages}
         keyExtractor={(m) => m.id}
         renderItem={renderItem}
-        inverted
+        inverted={false}
+        onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+        onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
         keyboardShouldPersistTaps="handled"
       />
       <View style={styles.composerWrap}>

@@ -7,7 +7,7 @@ const router = express.Router();
 
 // POST /api/whisperwall - Create anonymous post
 router.post('/', generateSessionId, [
-  body('content.text').notEmpty().isLength({ max: 2000 }),
+  body('content.media').optional().isArray(),
   body('category').notEmpty().isIn(['Gaming', 'Education', 'Beauty', 'Fitness', 'Music', 'Technology', 
     'Art', 'Food', 'Travel', 'Sports', 'Movies', 'Books', 'Fashion',
     'Photography', 'Comedy', 'Science', 'Politics', 'Business', 'Vent', 
@@ -25,6 +25,27 @@ router.post('/', generateSessionId, [
 
     const { content, category, tags, location } = req.body;
 
+    // Validate text length if provided
+    if (content.text && content.text.length > 2000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Text content must be 2000 characters or less'
+      });
+    }
+
+    // Validate that post has either text or media
+    const hasText = content.text && content.text.trim().length > 0;
+    const hasMedia = content.media && Array.isArray(content.media) && content.media.length > 0;
+    
+    if (!hasText && !hasMedia) {
+      return res.status(400).json({
+        success: false,
+        message: 'Post must have either text content or media'
+      });
+    }
+
+    console.log('👻 Creating WhisperWall post with content:', JSON.stringify(content, null, 2)); // Debug log
+
     const whisperPost = new WhisperPost({
       content,
       category,
@@ -33,6 +54,7 @@ router.post('/', generateSessionId, [
     });
 
     await whisperPost.save();
+    console.log('✅ WhisperWall post saved with ID:', whisperPost._id); // Debug log
 
     res.status(201).json({
       success: true,
@@ -80,6 +102,17 @@ router.get('/', generateSessionId, async (req, res) => {
       .sort(sortCriteria)
       .skip(skip)
       .limit(parseInt(limit));
+
+    console.log('👻 Retrieved WhisperWall posts:', posts.length); // Debug log
+    posts.forEach((post, index) => {
+      console.log(`👻 WhisperWall Post ${index + 1}:`, {
+        id: post._id,
+        text: post.content?.text,
+        mediaCount: post.content?.media?.length || 0,
+        media: post.content?.media,
+        expiresAt: post.expiresAt
+      }); // Debug log
+    });
 
     // Add user reaction info based on session
     const postsWithSessionReactions = posts.map(post => {
